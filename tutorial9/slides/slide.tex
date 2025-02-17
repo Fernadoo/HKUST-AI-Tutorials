@@ -1,0 +1,1144 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Copyright (c) 2024 Fengming Zhu. All rights reserved.
+% Email:        fzhuae@connect.ust.hk
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\documentclass{beamer}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage[numbers]{natbib}
+%\UseRawInputEncoding
+
+\usetheme{metropolis}
+\definecolor{white}{rgb}{1,1,1}
+\beamersetaveragebackground{white}
+
+% other packages
+\usepackage{latexsym,amsmath,xcolor,multicol,booktabs,calligra}
+\usepackage{amsfonts, amssymb}
+\usepackage{graphicx,listings,stackengine}
+\usepackage{ulem}
+
+% \usepackage[loadonly]{enumitem}
+% \setlistdepth{20}
+% \renewlist{itemize}{itemize}{20}
+
+%% Enable only in Xelatex
+% \usepackage{pstricks}
+
+\author{Fengming ZHU}  % you can change it to your name
+\title{COMP3211 Tutorial 9: First-Order Logic}
+\institute{Department of CSE \\ HKUST \\ {\copyright\ 2024 Fengming Zhu. All rights reserved.}}
+\date{May 6\&9, 2024} % you can change it to the latest date
+
+
+% defs
+\def\cmd#1{\texttt{\color{red}\footnotesize $\backslash$#1}}
+\def\env#1{\texttt{\color{blue}\footnotesize #1}}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+\definecolor{halfgray}{gray}{0.55}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries\color{deepblue},
+    emphstyle=\ttfamily\color{deepred},    % Custom highlighting style
+    stringstyle=\color{deepgreen},
+    numbers=left,
+    numberstyle=\small\color{halfgray},
+    rulesepcolor=\color{red!20!green!20!blue!20},
+    frame=shadowbox,
+}
+
+{}
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+
+% \begin{frame}{References}
+% \begin{itemize}
+%     \item \underline{Main focus}
+%     \begin{itemize}
+%         \item
+%         (SoCS'2013) \textbf{Multi-Agent Path Finding for Self Interested Agents}
+%         \cite{bnaya2013multi}
+        
+%         \item
+%         (AAAI'2015) \textbf{Multi-Agent Pathfinding as a Combinatorial Auction}
+%         \cite{amir2015multi}
+
+%         \item
+%         (Tech report) \textbf{An Empirical Evaluation of a Combinatorial Auction for Solving Multi-Agent Pathfinding Problems}
+%     \end{itemize}
+
+%     \item Related
+%     \begin{itemize}
+%         \item
+%         (AAMAS'2019) \textit{Polynomial-Time Multi-Agent Pathfinding with Heterogeneous and Self-Interested Agents}
+%         \cite{machida2019polynomial}
+
+%         \item
+%         (IROS'2020) \textit{Path Negotiation for Self-interested Multirobot Vehicles in Shared Space}
+%         \cite{inotsume2020path}
+%     \end{itemize}
+% \end{itemize}
+% \end{frame}
+
+
+%\begin{frame}{Outline}
+%    % \tableofcontents[sectionstyle=show,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
+%    \tableofcontents[
+%    sectionstyle=show,
+%    subsectionstyle=shaded,
+%    subsubsectionstyle=shaded
+%    ]
+%\end{frame}
+
+\begin{frame}{Operator Precedence}
+	Precedence of logical connectives:
+\[
+(\forall \sim \exists) \succ \neg \succ \land \succ \lor \succ \implies \succ \iff
+\]
+E.g.,
+\[
+\neg A \lor B \iff C \land D \implies E
+\equiv
+\alert{[(\neg A) \lor B] \iff [(C \land D) \implies E]}
+\]
+And all connectives are right-associative (grouped from the right to the left),
+\[
+A\implies B \implies C \equiv
+\alert{A\implies (B \implies C)}
+\]
+And with quantifiers,
+\[
+\forall x, p(x) \implies \forall x, q(x) \equiv 
+\alert{[\forall x, p(x)] \implies [\forall y, q(y)]}
+\]
+
+\end{frame}
+
+\begin{frame}{Representation - warm up}
+\begin{enumerate}
+	\item Mary loves everyone.
+	\pause{$$\forall x, love(Mary,x)$$}
+	\item Everyone loves herself.
+	\pause{$$\forall x, love(x,x)$$}
+	\item Everyone loves everyone.
+	\pause{$$\forall x \forall y, love(x,y)$$}
+	\item Everyone loves everyone except herself.
+	\pause{$$\forall x \forall y, x\neq y \implies love(x,y)$$}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Representation - quantifiers}
+\begin{enumerate}
+	\item For every person, there is someone whom she loves.
+	\pause
+	\[
+	\forall x \exists y, love(x,y)
+	\]
+	\item There is someone whom everyone loves.
+	\pause
+	\[
+	\exists x \forall y, love(y,x)
+	\]
+	\item There is someone who loves everyone.
+	\pause
+	\[
+	\exists x \forall y, love(x, y)
+	\]
+	\item For everyone, there is someone who loves her.
+	\pause
+	\[
+	\forall x \exists y, love(y, x)
+	\]
+\end{enumerate}
+\end{frame}
+
+
+
+
+
+\begin{frame}{Representation - more complex}
+\begin{enumerate}
+	\item Every student who loves Mary is happy.
+	\pause{$$\forall x, student(x) \land love(x,Mary) \implies happy(x)$$}
+	\item Every boy who loves Mary hates every boy whom Mary loves.
+	\pause
+	\[
+	\begin{split}
+		&\forall x, \\
+		& \{boy(x) \land love(x, Mary) \implies \forall y, \\
+		& [boy(y) \land love(Mary, y) \implies hate(x,y)]\}
+	\end{split}
+	\]
+	\item Every boy who loves Mary hates every other boy whom Mary loves.
+	\pause
+	\[
+	\begin{split}
+		&\forall x, \\
+		& \{boy(x) \land love(x, Mary) \implies \forall y, \\
+		& [boy(y) \land love(Mary, y) \land x\neq y \implies hate(x,y)]\} 
+	\end{split}
+	\]
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Typical mistake}
+Every boy who loves Mary hates every boy whom Mary loves.
+	\[
+	\begin{split}
+		&\forall x, \\
+		& \{boy(x) \land love(x, Mary) \land \forall y, \\
+		& [boy(y) \land love(Mary, y) \implies hate(x,y)]\}
+	\end{split}
+	\]
+\pause
+	\alert{
+Correct:
+	\[
+	\begin{split}
+		&\forall x, \\
+		& \{boy(x) \land love(x, Mary) \implies \forall y, \\
+		& [boy(y) \land love(Mary, y) \implies hate(x,y)]\}
+	\end{split}
+	\]
+	}
+
+\end{frame}
+
+\begin{frame}{Underlying subtlety}
+When we say $\forall x, Precondition(x) \implies Conclusion(x)$, it means
+\[
+\begin{split}
+\text{For every $x_i\in Domain(x)$}, & \\
+& [Precondition(x_1) \implies Conclusion(x_1)] \land \\
+& [Precondition(x_2) \implies Conclusion(x_2)] \land \\
+& \cdots \land \\
+& [Precondition(x_n) \implies Conclusion(x_n)] \land
+\end{split}
+\]
+\begin{exampleblock}{E.g., Every boy loves Mary:}
+$$\forall x, boy(x) \implies love(x, Mary)$$
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Underlying subtlety (con't)}
+When we say $\exists x, Precondition(x) \land Conclusion(x)$, it means
+\[
+\begin{split}
+\text{For every $x_i\in Domain(x)$}, & \\
+& [Precondition(x_1) \land Conclusion(x_1)] \lor \\
+& [Precondition(x_2) \land Conclusion(x_2)] \lor \\
+& \cdots \lor \\
+& [Precondition(x_n) \land Conclusion(x_n)] \lor
+\end{split}
+\]
+\begin{exampleblock}{E.g., One boy loves Mary:}
+$$\exists x, boy(x) \land love(x, Mary)$$
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Transformation}
+Every boy who loves Mary hates every boy whom Mary 
+\[
+	\begin{split}
+		&\forall x, \\
+		& \{boy(x) \land love(x, Mary) \implies \forall y, \\
+		& [boy(y) \land love(Mary, y) \implies hate(x,y)]\}
+	\end{split}
+\]
+\alert{
+How about this one:
+\[
+\begin{split}
+	&\forall x \forall y, \\
+	& [boy(x) \land love(x, Mary)] \land [boy(y) \land love(Mary, y)] \\
+	& \implies hate(x,y)	
+\end{split}
+\]
+}
+\pause
+Yes, equivalent!
+
+(every such boy x that love(x,Mary)) hates \\
+(every such boy y that love(Mary, y))
+\end{frame}
+
+\begin{frame}{Transformation (cont'd)}
+\vspace{-5mm}
+\[
+\begin{split}
+	&\forall x \forall y, \\
+	& [boy(x) \land love(x, Mary)] \land [boy(y) \land love(Mary, y)] \\
+	& \implies hate(x,y)	 \\
+\equiv\
+ & \forall x \forall y, \\
+	&\neg[boy(x) \land love(x, Mary)] \lor \\
+	&\neg[boy(y) \land love(Mary, y)] \lor hate(x,y) \\
+\equiv\
+& \forall x, \\ 
+& \neg[boy(x) \land love(x, Mary)] \lor \\
+& \{\forall y, \neg[boy(y) \land love(Mary, y)] \lor hate(x,y)\} \\
+\equiv\
+& \forall x, \\
+	&\{boy(x) \land love(x, Mary) \implies \forall y,\\ 
+	& [boy(y) \land love(Mary, y) \implies hate(x,y)]\}
+\end{split}
+\]
+\end{frame}
+
+\begin{frame}[fragile=singleslide]{Transformation (cont'd)}
+The two control flows have the same effects:
+\begin{verbatim}
+for x:
+    if x:
+        for y:
+            if y:	
+\end{verbatim}
+\begin{verbatim}
+for x:
+    for y:
+        if x:
+            if y:	
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}{References}
+	\begin{enumerate}
+		\item First-Order Logic, Stanford, \url{https://web.stanford.edu/class/archive/cs/cs103/cs103.1232/lectures/04/Condensed\%20Slides.pdf}
+		\item Practice in Logic and HW 1, UMass, \url{https://people.umass.edu/partee/NZ_2006/More\%20Answers\%20for\%20Practice\%20in\%20Logic\%20and\%20HW\%201.pdf}
+	\end{enumerate}
+\end{frame}
+
+%\begin{frame}{Declarative Problem Solving}
+%	1. Represent the problem in a formal language, e.g., \underline{Propositional Logic}, Firsr-Order Logic, PDDL, ASP, etc..
+%	
+%	2. Give it to a solver, e.g., \underline{Z3}
+%	\footnote{https://ericpony.github.io/z3py-tutorial/guide-examples.htm}
+%	, FF-planer, clingo, etc., to get a model.
+%	
+%	3. Convert the model back to a solution to the original problem.
+%\end{frame}
+%
+%\begin{frame}{Which One Contains Salt}
+%    \begin{figure}[htpb]
+%        \centering
+%        \includegraphics[width=0.5\linewidth]{pic/salt.jpg}
+%    \end{figure}
+%	On April Fool's Day, your kid replaces the salt in three out of your four salt shakers with sugar. But he also left messages on each.
+%	Only one of these notes is true, which one contains salt.
+%	\footnote{Question 9 from https://www.rd.com/article/logic-puzzles/}
+%\end{frame}
+
+%\begin{frame}{Which One Contains Salt}
+%    \begin{figure}[htpb]
+%        \centering
+%        \includegraphics[width=0.5\linewidth]{pic/salt.jpg}
+%    \end{figure}
+%- For each container X, X is True if with salt and False otherwise.
+%
+%- NoteA = $A$, NoteB = $B$, NoteC = $\neg C$, NoteD = $\neg B$.
+%
+%- $OnlyOneTrue(NoteA, NoteB, NoteC, NoteD)$
+%
+%- $OnlyOneTrue(A, B, C, D)$
+%
+%\alert{Answer: C contains salt.}
+%\end{frame}
+
+%\begin{frame}{When is The Birthday}
+%	George, William, John, Abe, and Millard have their birthdays on consecutive days, all between Monday and Friday.
+%	\begin{itemize}
+%		\item George's birthday is as many days before Millard's and William's is after Abe's.
+%		\item John is two days older than Abe.
+%		\item Millard's birthday is on Thursday.
+%	\end{itemize}
+%	Figure out whose birthday is on which day.
+%	\footnote{Question 3 from https://www.rd.com/article/logic-puzzles/}
+%\end{frame}
+%
+%\begin{frame}{Who Took Drugs}
+%	Determine who out of the following is guilty of doping.
+%	\footnote{https://math.stackexchange.com/questions/396264/propositional-logic-riddle-puzzle}
+%	The suspects are: Sam, Michael, Bill, Richard, Matt.
+%
+%1) Sam said: Michael or Bill took drugs, but not both.
+%
+%2) Michael said: Richard or Sam took drugs, but not both.
+%
+%3) Bill said: Matt or Michael took drugs, but not both.
+%
+%4) Richard said: Bill or Matt took drugs, but not both.
+%
+%5) Matt said: Bill or Richard took drugs, but not both.
+%
+%Of the aobve 5 statements, 4 are true, one is false.
+%
+%6) Tom said: If Richard took drugs, then Bill took drugs.
+%\end{frame}
+
+%\section{Propositional Logic}
+
+
+%\subsection{Example 1}
+%
+%\begin{frame}{Example 1 - Formulation}
+%    Suppose there are three people: 1, 2 and 3.
+%    \begin{itemize}
+%        \item $P_i$: person $i$ likes partying.
+%        \item $E_i$: person $i$ likes exams.
+%        \item $S_i$: person $i$ is a student.
+%        \item $T_i$: person $i$ is a teenager.
+%    \end{itemize}
+%
+%    Encode the following facts as propositional formulas:
+%        \begin{enumerate}
+%            \item If person $i$ is a student, then she does not like exams.
+%            \item If person $i$ is young, then she likes partying.
+%            \item Everyone of the three people is either young, a student, or both.
+%            \item Person 2 likes what person 1 dislikes, and dislikes what person 1 likes.
+%            \item Person 1 likes partying and exams.
+%        \end{enumerate}
+%\end{frame}
+%
+%\begin{frame}{Example 1 - Formulation (solution)}
+%    \begin{enumerate}
+%        \item $S_1 \supset \neg E_1, S_2 \supset \neg E_2, S_3 \supset \neg E_3$
+%        \item $T_1 \supset P_1, T_2 \supset P_2, T_3 \supset P_3$
+%        \item $T_1 \lor S_1, T_2 \lor S_2, T_3 \lor S_3$
+%        \item $P_1 \equiv \neg P_2, E_1 \equiv \neg E_2$
+%        \item $P_1 \land E_1$
+%    \end{enumerate}
+%\end{frame}
+%
+%
+%\begin{frame}{Example 1 - Refutation}
+%    By \underline{refutation} to show that person 2 is a student but not young.
+%\end{frame}
+%
+%
+%\begin{frame}{Example 1 - Refutation (by resolution)}
+%    \begin{figure}[htpb]
+%        \centering
+%        \includegraphics[width=1\linewidth]{pic/resolution.png}
+%    \end{figure}
+%\end{frame}
+%
+%
+%\begin{frame}{Example 1 - Refutation (by Z3)}
+%    A helpful website: https://ericpony.github.io/z3py-tutorial
+%
+%    See \texttt{refutation.ipynb}
+%\end{frame}
+%
+%
+%
+%\section{First-Order Logic}
+%
+%
+%\subsection{Example 2}
+%
+
+
+% \begin{frame}{Exercise:}
+%     \begin{itemize}
+%         \item Think of an integer between [1..99], send me in a private chat.
+
+%         \item The one whose number is closest to $\lceil \frac{2}{3} AVG(allNumbers) \rceil$ win the game.  
+%     \end{itemize}
+% \end{frame}
+
+
+
+% \begin{frame}{Cooperative v.s. Self-interested}
+
+% \begin{exampleblock}{Cooperative agents:}
+% \begin{itemize}
+%     \item Input: {a weighted graph, N agents (starts/goals)}
+    
+%     \item Objective: {minimize global cost}
+% \end{itemize}
+% \end{exampleblock}
+
+% \pause
+% \begin{exampleblock}{Self-interested agents:}
+% \begin{itemize}
+%     \item Objective: {minimize \textbf{individual cost}}
+
+%     \pause
+%     \item A naïve way: {each schedule herself individually, resolve conflicts randomly}
+% \end{itemize}
+% \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Relation with Traffic Control}
+
+% \begin{exampleblock}{Traffic flow network:}
+% \begin{itemize}
+%     \item Continuous flow along edges, causing certain \alert{delays}
+
+%     \item Selfish routing is proved to be non-optimal
+
+%     \item Toll/taxation mechanisms are usaully used.
+
+%     \item Sometimes coincides with congestion games (a classical \alert{potential game}) 
+% \end{itemize}
+% \end{exampleblock}
+
+% \end{frame}
+
+
+
+% \begin{frame}{An Example}
+
+% % \begin{figure}[htpb]
+% %         \centering
+% %         \includegraphics[width=0.6\linewidth]{pic/tax_eg.png}
+% % \end{figure}
+
+% \begin{columns}
+%     \begin{column}{.5\textwidth}
+%     \centering
+%         \underline{Selfish routing} \\
+%         a1: \{S1, \_, C, G1\} \\
+%         a2: \{S2, C, G2\} \\
+%         a3: \{S3, \_, C, G3\} \\
+%         $\Rightarrow (3+\alert{1}) + 2 + (3+\alert{2}) = 11$
+%     \end{column}    
+
+%     \pause
+%     \begin{column}{.5\textwidth}
+%     \centering
+%         \underline{With taxation} \\
+%         a1: \{S1, left-hand, G1\} \\
+%         a2: \{S2, C, G2\} \\
+%         a3: \{S3, right-hand, G3\} \\
+%         $\Rightarrow \alert{4} + 2 + \alert{4} = 10$
+%     \end{column}
+% \end{columns}
+
+% \end{frame}
+
+
+% \begin{frame}{Formally}
+
+% \begin{exampleblock}{Key idea:}
+% \begin{itemize}
+%     \item Assign each edge/vertex a tax (penalty)
+
+%     \item Individually minimizes $\hat{c}(P_i) = c(P_i) + T(P_i)$
+
+%     \pause[2]
+%     \item \alert{$\Rightarrow$ Iterative Taxation Framework}
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.8\linewidth]{pic/ITF.png}
+%     % \end{figure}
+
+%     \pause[3]
+%     \item Implementations: 1) Exhaustive 2) Monte-Carlo
+% \end{itemize}
+% \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Evaluation -- toy example}
+
+% % \begin{figure}[htpb]
+% %         \centering
+% %         \includegraphics[width=1\linewidth]{pic/result_3x3.png}
+% %         \caption{EITA (exhaustive iterative taxation algorithm),
+% %                 MC-ITA (Monte-Carlo iterative taxation algorithm),
+% %                 Lowerbound (global optimum)} 
+% % \end{figure}
+
+% \end{frame}
+
+
+% \begin{frame}{Evaluation -- large scale}
+
+% \begin{columns}
+%     \begin{column}{.65\columnwidth}
+%         % \begin{figure}[htpb]
+%         %     \centering
+%         %     \includegraphics[width=1\linewidth]{pic/result_den520.png}
+%         %     \caption{den520d for 10 agents}
+%         % \end{figure}
+%     \end{column}
+
+%     \begin{column}{.35\columnwidth}
+%         % \begin{figure}[htpb]
+%         %     \centering
+%         %     \includegraphics[width=1\linewidth]{pic/den520d.pdf}
+%         %     \caption{den520d -- dimension ($257\times 256$), \#states (28178)}
+%         % \end{figure}
+%     \end{column}
+% \end{columns}
+
+% \end{frame}
+
+
+% \begin{frame}{Drawbacks}
+
+% \begin{itemize}
+%     \item Not guaranteed to minimize global cost (maximize social welfare)
+
+%     \item Not strategyproof: agents could misreport their starts/goals
+
+%     \item Agents are restricted to be homogeneous
+
+%     \pause
+%     \item \alert{Let's seek help from auctions!}
+% \end{itemize}
+
+% \end{frame}
+
+
+
+% \begin{frame}{Conventional Combinatorial Auction}
+
+% \begin{exampleblock}{Preliminaries}
+%     \begin{itemize}
+%         \item Agents: $N = \{1, \cdots, n\}$
+
+%         \item Actioned items: $M = \{1, \cdots, m\}$
+
+%         \item Valuation function for each agent $v_i: 2^M \mapsto \mathbb{R}$
+
+%         \pause
+%         \alert{
+%         \item A mechanism (with monetary transfer) is a pair of
+%         \begin{itemize}
+%             \item a social choice function $f: V_1 \times \cdots \times V_n \mapsto A$
+            
+%             \item a vector of payments functions $p_1, \cdots, p_n$, where $p_i: V_1 \times \cdots \times V_n \mapsto \mathbb{R}$
+%         \end{itemize}}
+%     \end{itemize}
+% \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Reduce to CA}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=1\linewidth]{pic/reduction.png}
+%     % \end{figure}
+
+%     \pause
+%     \begin{exampleblock}{Derived valuation function:}
+%     \begin{itemize}[<+-| alert@+>]
+%         \item $v_i(p) = val(g_i) - c(p)$
+
+%         \item Turns out $val(g_i) := max_c \times n$ [constant]
+%     \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Strategic Manipulation}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.4\linewidth]{pic/ca_eg.png}
+%     %     \caption{Assuming $v_i(g_i) = 10$}
+%     % \end{figure}
+
+%     \begin{exampleblock}{A centralized yet not strategyproof mechanism:}
+%     \begin{itemize}[<+-| alert@+>]
+%         \item If a1 and a2 report truthfully,
+%             \begin{itemize}
+%                 \item a1 gets 10-(1.5+1), a2 gets 10-(1+1)
+%             \end{itemize}
+
+%         \item If a1 misreports (s1, X) = 1.8,
+%             \begin{itemize}
+%                 \item a1 gets 10-(1+1), a2 gets 10-(1.7+1)
+%             \end{itemize}
+%     \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Strategic Manipulation}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.3\linewidth]{pic/ca_eg.png}
+%     %     \caption{Assuming $v_i(g_i) = 10$}
+%     % \end{figure}
+
+%     \begin{exampleblock}{The well-known VCG mechanism:}
+%     \begin{itemize}[<+-| alert@+>]
+%         \item Payment := the harm you did to others' social welfare
+
+%         \item If a1 and a2 report truthfully,
+%             \begin{itemize}
+%                 \item a1 gets 10-(1.5+1)-0 = 7.5, a2 gets 10-(1+1)-0.5
+%             \end{itemize}
+
+%         \item If a1 misreports (s1, X) = 1.8,
+%             \begin{itemize}
+%                 \item a1 gets 10-(1+1)-0.7 = 7.3, a2 gets 10-(1.7+1)-0
+%             \end{itemize}
+%     \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Computational Issues}
+
+% \begin{itemize}
+%     \item In sealed-bid auctions, such as VCG, each agent needs to bid over all bundles that it may be interested in. 
+
+%     \item In MAPF, this means that an agent $i$ would need to find all paths from $s_i$ to $g_i$ and place bids on them.
+
+%     \item The number of paths between two vertices in a graph may be exponential in the path length.
+
+%     \item Moreover, to find an allocation that maximizes its revenue, the auctioneer will need to check the cross product of these potentially exponential number of bids.
+
+%     \pause
+%     \item \alert{Interative combinatorial auction (Parkes 2006)}
+% \end{itemize}
+
+% \end{frame}
+
+
+% \begin{frame}{Iterative Combinatorial Auction}
+
+% \begin{exampleblock}{Basic framework (\textit{iBundle}):}
+% \begin{itemize}
+%     \item Bidding
+
+%     \item Winner determination
+
+%     \item Price update
+% \end{itemize}
+% \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{iBundle -- Bidding}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.8\linewidth]{pic/bidding.png}
+%     % \end{figure}
+
+%     \begin{exampleblock}{Bidding:}
+%         \begin{itemize}[<+-| alert@+>]
+%             \item Agents place \texttt{XOR} bids on their \underline{desired} bundles.
+
+%             \item Minimize $cost(p) + ask(p)$
+
+%             \item $a_3$ bids $[<F, t_1>, <D, t_2>, <G, t_3>, <E, t_4>, <I, t_5>]; [<F, t_1>, <D, t_2>, <C, t_3>, <E, t_4>, <I, t_5>]$.
+
+%             \item Myopic best response is a dominant strategy
+%         \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{iBundle -- Winner Dermination}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.8\linewidth]{pic/bidding.png}
+%     % \end{figure}
+
+%     \begin{exampleblock}{Winner determination:}
+%         \begin{itemize}[<+-| alert@+>]
+%             \item Determine a provisional allocation
+
+%             \item To maximizes seller's revenue and include more non-conflicting agents
+
+%             \item $a_1$ gets $[<A, t_1>, <C, t_2>]$, $a_3$ gets $[<F, t_1>, <D, t_2>, <G, t_3>, <E, t_4>, <I, t_5>]$
+%         \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{iBundle -- Price Update}
+
+%     % \begin{figure}[htpb]
+%     %     \centering
+%     %     \includegraphics[width=0.8\linewidth]{pic/bidding.png}
+%     % \end{figure}
+
+%     \begin{exampleblock}{Price update:}
+%         \begin{itemize}[<+-| alert@+>]
+%             \item Initial prices for all bundles are 0
+
+%             \item Bundles that ``unhappy'' agents bid on are raised by $\epsilon$
+
+%             \item In MAPF, sufficient to set $\epsilon = \min(c_e)$
+
+%             \item $a_2$ is unhappy, prices of paths of $MDD_2^3$ are raised by 1
+%         \end{itemize}
+%     \end{exampleblock}
+
+% \end{frame}
+
+
+% \begin{frame}{Evaluation}
+%     % \begin{figure}[htpb]
+%     %     \includegraphics[width=0.6\linewidth]{pic/ca_small}
+%     % \end{figure}
+% \end{frame}
+
+
+% \begin{frame}{Evaluation}
+%     % \begin{figure}[htpb]
+%     %     \includegraphics[width=0.6\linewidth]{pic/ca_large}
+%     % \end{figure}
+% \end{frame}
+
+
+
+% %%%%%%%%%% part 4 %%%%%%%%%%
+
+
+% \begin{frame}{Insights}
+
+% \begin{itemize}[<+-| alert@+>]
+%     \item Consider heterogeneous and self-interested agents
+
+%     \item Still, complexity issues due to the combinatorial nature
+
+%     \item One-parameter agents, e.g. fuel consumption  
+%     \begin{itemize}
+%         \item Seems poly-time strategyproof mechanism exists \cite{machida2019polynomial}
+%     \end{itemize}
+
+%     \item Negotiation and bargaining on paths\cite{inotsume2020path}
+% \end{itemize}
+
+% \end{frame}
+
+
+% \begin{frame}[allowframebreaks]
+%     \bibliography{ref}
+%     \bibliographystyle{alpha}
+%     % If too many references, use this command to resize：
+%     % \tiny\bibliographystyle{alpha}
+% \end{frame}
+
+
+\begin{frame}
+    \begin{center}
+        {\Huge\calligra Thanks!}
+    \end{center}
+\end{frame}
+
+
+% \begin{frame}{A Running Example}
+    % \begin{figure}[htpb]
+    %     \centering
+    %     \includegraphics[width=0.5\linewidth]{pic/mapf_ca_eg.png}
+        
+    %     \pause
+    %     \includegraphics[width=1\linewidth]{pic/mapf_ca_proc_1.png}
+        
+    %     \pause
+    %     \includegraphics[width=1\linewidth]{pic/mapf_ca_proc_2.png}
+        
+    %     \pause
+    %     \includegraphics[width=1\linewidth]{pic/mapf_ca_proc_3.png}
+    % \end{figure}
+% \end{frame}
+
+% \begin{frame}{Sequential $\to$ Decentralized}
+%     \begin{block}{}
+%         \begin{figure}[htpb]
+%             \centering
+%             \includegraphics[width=0.3\linewidth]{pic/gradient.png}
+%         \end{figure}
+%     \end{block}
+
+%     \pause
+%     \begin{columns}
+%         \begin{column}{.5\textwidth}
+%         \centering
+%             \begin{exampleblock}{Sequential update}
+%                 \begin{itemize}
+%                     \item
+%                     For $i = 1 \to k$,
+%                     \begin{itemize}
+%                         \item While not converge,
+%                         \begin{itemize}
+%                             \item \texttt{Gradient ascent}
+%                         \end{itemize}
+%                     \end{itemize}
+%                 \end{itemize}
+%             \end{exampleblock}
+%         \end{column}    
+
+%         \pause
+%         \begin{column}{.5\textwidth}
+%         \centering
+%             \begin{exampleblock}{Decentralized update}
+%                 \begin{itemize}
+%                     \item
+%                     For every $i \in [1..k]$,
+%                     \begin{itemize}
+%                         \item While not converge,
+%                         \begin{itemize}
+%                             \item \texttt{Gradient ascent}
+%                             \item \alert{\texttt{Broadcast}$({v}_i)$}
+%                         \end{itemize}
+%                     \end{itemize}
+%                 \end{itemize}
+%             \end{exampleblock}
+%         \end{column}
+%     \end{columns}
+% \end{frame}
+
+
+% \begin{frame}{Issues}
+%     \begin{columns}
+%         \begin{column}{.3\columnwidth}
+%             \begin{figure}[htpb]
+%                 \centering
+%                 \includegraphics[width=1.1\linewidth]{pic/bias.png}
+%             \end{figure}
+%         \end{column}
+
+%         \begin{column}{.7\columnwidth}
+%             \begin{itemize}[<+-| alert@+>]
+%                 \item 
+%                 MNIST for minibatch sizes of 1024 (top), 512 (middle), and 256 (bottom)
+
+%                 \item
+%                 The figure shows the performance of EigenGame degrades in the low batch size regime.
+
+%                 % \item
+%                 % Because we use the same minibatch for all inner products in the gradient which contains products and ratios of random variables.
+
+%                 \item Current hardware easily supports batches of 1024 for MNIST and 128 for IMAGENET
+
+%                 \item \underline{\textbf{But still, can we reduce the bias?}}
+%             \end{itemize}
+%         \end{column}
+%     \end{columns}
+% \end{frame}
+
+
+% \begin{frame}{Figure and Column}
+%     % From thuthesis user guide.
+%     \begin{minipage}[c]{0.3\linewidth}
+%     %%% DO NOT USE PSTricks in pdflatex
+% %         \psset{unit=0.8cm}
+% %         \begin{pspicture}(-1.75,-3)(3.25,4)
+% %             \psline[linewidth=0.25pt](0,0)(0,4)
+% %             \rput[tl]{0}(0.2,2){$\vec e_z$}
+% %             \rput[tr]{0}(-0.9,1.4){$\vec e$}
+% %             \rput[tl]{0}(2.8,-1.1){$\vec C_{ptm{ext}}$}
+% %             \rput[br]{0}(-0.3,2.1){$\theta$}
+% %             \rput{25}(0,0){%
+% %             \psframe[fillstyle=solid,fillcolor=lightgray,linewidth=.8pt](-0.1,-3.2)(0.1,0)}
+% %             \rput{25}(0,0){%
+% %             \psellipse[fillstyle=solid,fillcolor=yellow,linewidth=3pt](0,0)(1.5,0.5)}
+% %             \rput{25}(0,0){%
+% %             \psframe[fillstyle=solid,fillcolor=lightgray,linewidth=.8pt](-0.1,0)(0.1,3.2)}
+% %             \rput{25}(0,0){\psline[linecolor=red,linewidth=1.5pt]{->}(0,0)(0.,2)}
+% % %           \psRotation{0}(0,3.5){$\dot\phi$}
+% % %           \psRotation{25}(-1.2,2.6){$\dot\psi$}
+% %             \psline[linecolor=red,linewidth=1.25pt]{->}(0,0)(0,2)
+% %             \psline[linecolor=red,linewidth=1.25pt]{->}(0,0)(3,-1)
+% %             \psline[linecolor=red,linewidth=1.25pt]{->}(0,0)(2.85,-0.95)
+% %             \psarc{->}{2.1}{90}{112.5}
+% %             \rput[bl](.1,.01){C}
+% %         \end{pspicture}
+%     \end{minipage}\hspace{1cm}
+%     \begin{minipage}{0.5\linewidth}
+%         \medskip
+%         %\hspace{2cm}
+%         \begin{figure}[h]
+%             \centering
+%             \includegraphics[height=.4\textheight]{pic/dtmf.pdf}
+%         \end{figure}
+%     \end{minipage}
+% \end{frame}
+
+% \begin{frame}[fragile]{\LaTeX{} Commands}
+%     \begin{exampleblock}{Commands}
+%         \centering
+%         \footnotesize
+%         \begin{tabular}{llll}
+%             \cmd{chapter} & \cmd{section} & \cmd{subsection} & \cmd{paragraph} \\
+%             Chapter & Section & Subsection & Paragraph \\\hline
+%             \cmd{centering} & \cmd{emph} & \cmd{verb} & \cmd{url} \\
+%             Centre Align & Emphasis & Verbatim & Hyperlink \\\hline
+%             \cmd{footnote} & \cmd{item} & \cmd{caption} & \cmd{includegraphics} \\
+%             Foodnote & Item & Caption & FigP\&Pic \\\hline
+%             \cmd{label} & \cmd{cite} & \cmd{ref} \\
+%             Label & Citing & Referring\\\hline
+%         \end{tabular}
+%     \end{exampleblock}
+%     \begin{exampleblock}{Environment Command}
+%         \centering
+%         \footnotesize
+%         \begin{tabular}{lll}
+%             \env{table} & \env{figure} & \env{equation}\\
+%             Table & Figure & Equation \\\hline
+%             \env{itemize} & \env{enumerate} & \env{description}\\
+%             Bullets & Numbering & Description \\\hline
+%         \end{tabular}
+%     \end{exampleblock}
+% \end{frame}
+
+% \begin{frame}[fragile]{\LaTeX{} Environment Command Samples}
+%     \begin{minipage}{0.5\linewidth}
+% \begin{lstlisting}[language=TeX]
+% \begin{itemize}
+%   \item A \item B
+%   \item C
+%   \begin{itemize}
+%     \item C-1
+%   \end{itemize}
+% \end{itemize}
+% \end{lstlisting}
+%     \end{minipage}\hspace{1cm}
+%     \begin{minipage}{0.3\linewidth}
+%         \begin{itemize}
+%             \item A
+%             \item B
+%             \item C
+%             \begin{itemize}
+%                 \item C-1
+%             \end{itemize}
+%         \end{itemize}
+%     \end{minipage}
+%     \medskip
+%     \pause
+%     \begin{minipage}{0.5\linewidth}
+% \begin{lstlisting}[language=TeX]
+% \begin{enumerate}
+%   \item Class 1 
+%   \item Class 2
+%   \item Class 2
+%   \begin{itemize}
+%     \item[n+e] Student 1
+%   \end{itemize}
+% \end{enumerate}
+% \end{lstlisting}
+%     \end{minipage}\hspace{1cm}
+%     \begin{minipage}{0.3\linewidth}
+%         \begin{enumerate}
+%             \item Class 1
+%             \item Class 2
+%             \item Class 3
+%             \begin{itemize}
+%                 \item[n+e] Student 1
+%             \end{itemize}
+%         \end{enumerate}
+%     \end{minipage}
+% \end{frame}
+
+% \begin{frame}[fragile]{\LaTeX{} Equations}
+%     \begin{columns}
+%         \begin{column}{.55\textwidth}
+% \begin{lstlisting}[language=TeX]
+% $V = \frac{4}{3}\pi r^3$
+
+% \[
+%   V = \frac{4}{3}\pi r^3
+% \]
+
+% \begin{equation}
+%   \label{eq:vsphere}
+%   V = \frac{4}{3}\pi r^3
+% \end{equation}
+% \end{lstlisting}
+%         \end{column}
+%         \begin{column}{.4\textwidth}
+%             $V = \frac{4}{3}\pi r^3$
+%             \[
+%                 V = \frac{4}{3}\pi r^3
+%             \]
+%             \begin{equation}
+%                 \label{eq:vsphere}
+%                 V = \frac{4}{3}\pi r^3
+%             \end{equation}
+%         \end{column}
+%     \end{columns}
+%     \begin{itemize}
+%         \item Check more \href{https://en.wikipedia.org/wiki/Help:Displaying_a_formula}{\color{purple}{Here}}
+%     \end{itemize}
+% \end{frame}
+
+% \begin{frame}[fragile]
+%     \begin{columns}
+%         \column{.6\textwidth}
+% \begin{lstlisting}[language=TeX]
+% \begin{table}[htbp]
+%   \caption{Definition}
+%   \label{tab:number}
+%   \centering
+%   \begin{tabular}{cl}
+%     \toprule
+%     Word & Definition \\
+%     \midrule
+%     1 & 4.0 \\
+%     2 & 3.7 \\
+%     \bottomrule
+%   \end{tabular}
+% \end{table}
+% Check definition of 
+% Equation~(\ref{eq:vsphere}) 
+% in Table~\ref{tab:number}。
+% \end{lstlisting}
+%         \column{.4\textwidth}
+%         \begin{table}[htpb]
+%             \centering
+%             \caption{Definition}
+%             \label{tab:number}
+%             \begin{tabular}{cl}\toprule
+%                 Eq. & Def. \\\midrule
+%                 1 & 4.0\\
+%                 2 & 3.7\\\bottomrule
+%             \end{tabular}
+%         \end{table}
+%         \normalsize Please check the definition of Equation~(\ref{eq:vsphere}) in Table~\ref{tab:number}
+%     \end{columns}
+% \end{frame}
+
+% \begin{frame}{Plotting}
+%     \begin{itemize}
+%         \item Vector: eps, ps, pdf
+%         \begin{itemize}
+%             \item METAPOST, pstricks, pgf $\ldots$
+%             \item Xfig, Dia, Visio, Inkscape $\ldots$
+%             \item Export Matlab / Excel as pdf
+%         \end{itemize}
+%         \item Bitmap: png, jpg, tiff $\ldots$
+%         \begin{itemize}
+%             \item Avoiding using bitmaps 
+%         \end{itemize}
+%     \end{itemize}
+%     \begin{figure}[htpb]
+%         \centering
+%         \includegraphics[width=0.2\linewidth]{pic/QUT_Logo_CMYK.jpg}
+%         \caption{This is a Bitmaps}
+%     \end{figure}
+% \end{frame}
+
+\end{document}
