@@ -9,7 +9,7 @@ Tutorial slides and codes for the AI course at HKUST
 | 2         | Simple (reactive) agents, production systems, and genetic programming |
 | 3-4       | Search formulation and algorithms, including (weighted) BFS, DFS, greedy, A$^*$. Usually takes two sessions. |
 | 5         | Boolean satisfiability problems and constraint satisfiability problems |
-| 6         | MDP/RL formulations, dynamic programming, and hands-on examples |
+| 6         | MDP/RL formulations, dynamic programming, and hands-on examples. A more theoretic version is also provided, but turns out not-that-welcomed in the past field tests :-) |
 | 7         | Normal form games, Nash equilibrium, and auctions            |
 | 8         | Propositional logic, and puzzles solved by smt-z3            |
 | 9         | First-order logic, and a planning domain encoded by smt-z3 (optional) |
